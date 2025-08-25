@@ -6,7 +6,7 @@ authors = [
     {name = "Dan Gittik", email = "dan.gittik@uglabs.io"}
 ]
 readme = "README.md"
-requires-python = ">=3.12,<4.0"
+requires-python = ">=3.12"
 dependencies = [
     "websockets (>=15.0.1,<16.0.0)",
     "pydantic (>=2.11.7,<3.0.0)",
@@ -14,12 +14,6 @@ dependencies = [
 
 [tool.poetry]
 packages = [{ include = "pug_protocol" }]
-
-[tool.pytest.ini_options]
-filterwarnings = [
-  "ignore::DeprecationWarning:uvicorn.protocols.websockets.websockets_impl",
-  "ignore::DeprecationWarning:websockets.legacy"
-]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
