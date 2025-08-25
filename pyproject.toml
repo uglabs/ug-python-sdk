@@ -12,6 +12,9 @@ dependencies = [
     "pydantic (>=2.11.7,<3.0.0)",
 ]
 
+[tool.poetry]
+packages = [{ include = "pug_protocol" }]
+
 [tool.pytest.ini_options]
 filterwarnings = [
   "ignore::DeprecationWarning:uvicorn.protocols.websockets.websockets_impl",
