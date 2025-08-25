@@ -1,0 +1,23 @@
+[project]
+name = "pug-protocol"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Dan Gittik", email = "dan.gittik@uglabs.io"}
+]
+readme = "README.md"
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "websockets (>=15.0.1,<16.0.0)",
+    "pydantic (>=2.11.7,<3.0.0)",
+]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+  "ignore::DeprecationWarning:uvicorn.protocols.websockets.websockets_impl",
+  "ignore::DeprecationWarning:websockets.legacy"
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
