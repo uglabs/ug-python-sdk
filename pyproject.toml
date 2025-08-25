@@ -7,14 +7,12 @@ authors = [
 ]
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [
-    "websockets (>=15.0.1,<16.0.0)",
-    "pydantic (>=2.11.7,<3.0.0)",
-]
-
-[tool.poetry]
-packages = [{ include = "pug_protocol" }]
+dynamic = ["dependencies"]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+websockets = "^15.0.1"
+pydantic = "^2.11.7"
