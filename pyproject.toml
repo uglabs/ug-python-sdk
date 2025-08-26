@@ -16,3 +16,4 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.dependencies]
 websockets = "^15.0.1"
 pydantic = "^2.11.7"
+httpx = "^0.28.1"
