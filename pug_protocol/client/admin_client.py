@@ -44,10 +44,6 @@ class AdminClient:
         result = await self.client._get("/api/users")
         return result["users"]
 
-    async def create_user(self, name: str, email: str | None = None) -> dict[str, Any]:
-        result = await self.client._post("/api/users", name=name, email=email)
-        return result["user"]
-
     async def get_user(self, user_pk: int) -> dict[str, Any]:
         result = await self.client._get(f"/api/users/{user_pk}")
         return result["user"]

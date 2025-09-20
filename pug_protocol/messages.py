@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import datetime
 from typing import Any, Literal, Mapping, Self
 
 from pydantic import AwareDatetime, BaseModel, Field
 
 from .configs import AudioConfig
 from .types import Base64
-from .utilities import Utility
+from .utilities import AnyUtility
 
 
 class Request(BaseModel):
@@ -25,10 +24,8 @@ class Response(BaseModel):
     @classmethod
     def from_request(cls, request: Request, **kwargs: Any) -> Self:
         return cls(
-            kind=request.kind,
             client_start_time=request.client_start_time,
             server_start_time=request.server_start_time,
-            server_end_time=datetime.datetime.now(datetime.UTC),
             **kwargs,
         )
 
@@ -198,8 +195,20 @@ class InteractRequest(Request):
     kind: Literal["interact"] = "interact"
     text: str = ""
     speakers: list[str] = Field(default_factory=list)
+    # A mapping of parameters that will be made available in the prompt template.
     context: dict[str, Any] = Field(default_factory=dict)
+    # A list of utility names that should be called when user input is available.
+    # Evaluation of these utilities happens before the prompt is rendered, so that
+    # their values can be used in the prompt.
+    # Note: Use with caution, as this delays the assistant output and everything
+    # that follows (audio output, output utilities, etc.).
     on_input: list[str] = Field(default_factory=list)
+    # A list of utility names that should be called when user input is available.
+    # Unlike the `on_input` utilities, these are *non-blocking* and their outputs
+    # will not be available in the context for the prompt.
+    on_input_non_blocking: list[str] = Field(default_factory=list)
+    # A list of utility names that should be called when assistant output is
+    # available.
     on_output: list[str] = Field(default_factory=list)
     audio_output: bool = True
     language_code: str = "en"
@@ -217,6 +226,10 @@ class InteractionStartedEvent(InteractResponse):
 class TextEvent(InteractResponse):
     event: Literal["text"] = "text"
     text: str
+
+
+class SafetyPolicyEvent(InteractResponse):
+    event: Literal["safety_policy"] = "safety_policy"
 
 
 class TextCompleteEvent(InteractResponse):
@@ -248,6 +261,9 @@ class InteractionCompleteEvent(InteractResponse):
 
 class InterruptRequest(Request):
     kind: Literal["interrupt"] = "interrupt"
+    # While we only allow one interaction at a time due to conversation history
+    # management, the purpose of this field is to verify that the interrupt is
+    # intended on the right interaction.
     target_uid: str
     at_character: int | None = None
 
@@ -270,7 +286,8 @@ class RunResponse(Response):
 class Configuration(BaseModel):
     prompt: str | Reference | None = None
     temperature: float | None = None
-    utilities: dict[str, Utility | Reference | None] = Field(default_factory=dict)
+    utilities: dict[str, AnyUtility | Reference | None] = Field(default_factory=dict)
+    safety_policy: str | Reference | None = None
 
 
 class Reference(BaseModel):

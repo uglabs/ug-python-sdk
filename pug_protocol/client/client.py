@@ -1,10 +1,13 @@
+import asyncio
 import json
 import logging
-from typing import Any
+import webbrowser
+from typing import Any, Literal
 
 import httpx
 
 from .admin_client import AdminClient
+from .oauth import GoogleOAuthCallbackListener
 from .session import Session
 
 
@@ -29,8 +32,44 @@ class Client:
         except Exception:
             return False
 
-    async def login(self, api_key: str, team_name: str | None = None, federated_id: str | None = None) -> None:
-        result = await self._post("/api/auth/login", api_key=api_key, team_name=team_name, federated_id=federated_id)
+    async def login(
+        self,
+        api_key: str,
+        team_name: str | None = None,
+        federated_id: str | None = None,
+    ) -> None:
+        result = await self._post(
+            "/api/auth/login",
+            api_key=api_key,
+            team_name=team_name,
+            federated_id=federated_id,
+        )
+        self.access_token = result["access_token"]
+
+    async def login_with_google(self) -> None:
+        async with GoogleOAuthCallbackListener() as listener:
+            redirect_result = await self._post(
+                "/api/auth/login/google/app",
+                redirect_uri=listener.redirect_uri,
+            )
+            auth_url = redirect_result["authorization_url"]
+
+            print(f"If your browser doesn't open automatically, please navigate to: {auth_url}")
+            # Opening the browser sometimes hangs, so make sure to run this in a
+            # separate thread.
+            task = asyncio.create_task(asyncio.to_thread(webbrowser.open, auth_url))
+
+            callback_details = await listener.wait_for_callback()
+            # If we got the browser callback from the user manually opening
+            # their browser, cancel the browser task. If the task already
+            # completed, this will have no effect.
+            task.cancel()
+
+        result = await self._post(
+            "/api/auth/login/google/authorize",
+            code=callback_details.code,
+            state=callback_details.state,
+        )
         self.access_token = result["access_token"]
 
     def logout(self) -> None:
@@ -42,14 +81,23 @@ class Client:
 
     async def get_me(self) -> dict[str, Any]:
         result = await self._get("/api/users/me")
-        return result["user"]
+        return result
 
     async def update_me(self, name: str | None = None) -> dict[str, Any]:
         result = await self._patch("/api/users/me", name=name)
-        return result["user"]
+        return result
 
     async def delete_me(self) -> None:
         await self._delete("/api/users/me")
+
+    async def create_user(
+        self,
+        name: str,
+        email: str | None = None,
+        user_type: Literal["playerLogin", "playerCreate", "user"] = "user",
+    ) -> dict[str, Any]:
+        result = await self._post("/api/users", name=name, email=email, user_type=user_type)
+        return result
 
     async def list_players(self) -> list[dict[str, Any]]:
         result = await self._get("/api/players")
@@ -57,11 +105,11 @@ class Client:
 
     async def create_player(self, external_id: str) -> dict[str, Any]:
         result = await self._post("/api/players", external_id=external_id)
-        return result["player"]
+        return result
 
     async def get_player(self, player_pk: int) -> dict[str, Any]:
         result = await self._get(f"/api/players/{player_pk}")
-        return result["player"]
+        return result
 
     async def delete_player(self, player_pk: int) -> None:
         await self._delete(f"/api/players/{player_pk}")
@@ -94,8 +142,10 @@ class Client:
             if self.access_token:
                 headers["Authorization"] = f"Bearer {self.access_token}"
             response = await client.request(method, url, headers=headers, params=params, json=json)
-            if response.status_code != 200:
+            if not 200 <= response.status_code <= 299:
                 raise self._error(method, path, response)
+            if response.status_code == 204:  # No content response code
+                return {}
             data = response.json()
             return data
 

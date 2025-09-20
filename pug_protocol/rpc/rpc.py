@@ -146,6 +146,7 @@ class RPC:
         return result
 
     def _send_message(self, message: dict[str, Any]) -> None:
+        self._logger.debug("%s: Sending message %r", self, message)
         self.channel.send(message)
 
     def _normalize_kind_and_fields(self, kind: str, fields: dict[str, Any] | None) -> dict[str, Any]:
@@ -185,8 +186,9 @@ class RPC:
             | self._normalize_kind_and_fields(kind, fields)
         )
 
-    def send_stream_error(self, uid: str, error: str) -> None:
-        self.send_stream_message(uid, kind="error", fields={"error": error})
+    def send_stream_error(self, uid: str, error: str | None = None, fields: dict[str, Any] | None = None) -> None:
+        fields = (fields or {}) | ({"error": error} if error else {})
+        self.send_stream_message(uid, kind="error", fields=fields)
 
     def send_toplevel_error(self, error: str) -> None:
         self._send_message(
@@ -298,6 +300,10 @@ class RPC:
                     self.rpc._deregister_stream(self.uid)
                     self.closed = True
                     raise Exception(error)
+                case {"kind": "error"}:
+                    self.rpc._deregister_stream(self.uid)
+                    self.closed = True
+                    raise Exception("Stream closed with unspecified error")
                 case {"kind": "close"}:
                     self.rpc._deregister_stream(self.uid)
                     self.closed = True
@@ -309,13 +315,13 @@ class RPC:
                     self.fail(error)
                     raise Exception(error)
 
-        def fail(self, error: str) -> None:
-            self.rpc.send_stream_error(self.uid, error)
+        def fail(self, error: str | None = None, fields: dict[str, Any] | None = None) -> None:
+            self.rpc.send_stream_error(self.uid, error=error, fields=fields)
             self.closed = True
             self.rpc._deregister_stream(self.uid)
 
-        def close(self, **fields: Any) -> None:
-            self.rpc.send_stream_message(self.uid, kind="close", **fields)
+        def close(self, fields: dict[str, Any] | None = None) -> None:
+            self.rpc.send_stream_message(self.uid, kind="close", fields=fields)
             self.closed = True
             self.rpc._deregister_stream(self.uid)
 

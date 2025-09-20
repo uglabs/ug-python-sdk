@@ -4,12 +4,11 @@ import contextlib
 import datetime
 import logging
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, AsyncIterator, Iterator, Self
+from typing import TYPE_CHECKING, Any, AsyncIterator, Iterable, Iterator, Mapping, Self
 
-from pydantic import BaseModel
-
-from pug_protocol import messages, rpc
+from pug_protocol import messages, rpc, utilities
 from pug_protocol.configs import AudioConfig
+from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from .client import Client
@@ -76,10 +75,26 @@ class Session:
             messages.PingRequest(),
         ).transform(self._no_response)
 
-    def set_configuration(self, *, prompt: str) -> rpc.ResponseFuture[None]:
+    def set_configuration(
+        self,
+        *,
+        prompt: str,
+        temperature: float | None = None,
+        utilities: Mapping[str, utilities.AnyUtility | None] | None = None,
+        safety_policy: str | None = None,
+    ) -> rpc.ResponseFuture[None]:
         return self._make_request(
-            messages.SetConfigurationRequest(config=messages.Configuration(prompt=prompt)),
+            messages.SetConfigurationRequest(
+                config=messages.Configuration(
+                    prompt=prompt, temperature=temperature, utilities=dict(utilities or {}), safety_policy=safety_policy
+                )
+            ),
         ).transform(self._no_response)
+
+    def get_configuration(self) -> rpc.ResponseFuture[messages.Configuration]:
+        return self._make_request(
+            messages.GetConfigurationRequest(),
+        ).transform(self._on_get_configuration)
 
     def render_prompt(self, *, context: dict[str, Any]) -> rpc.ResponseFuture[str]:
         return self._make_request(
@@ -143,12 +158,26 @@ class Session:
 
     @contextlib.contextmanager
     def interact(
-        self, *, audio_output: bool = True, text: str = "", context: dict[str, Any] = {}
+        self,
+        *,
+        audio_output: bool = True,
+        text: str = "",
+        context: dict[str, Any] = {},
+        on_input: Iterable[str] = (),
+        on_output: Iterable[str] = (),
+        on_input_non_blocking: Iterable[str] = (),
     ) -> Iterator[AsyncIterator[dict[str, Any]]]:
         with self.rpc.open_stream() as stream:
             self._send_on_stream(
                 stream,
-                messages.InteractRequest(audio_output=audio_output, text=text, context=context),
+                messages.InteractRequest(
+                    audio_output=audio_output,
+                    text=text,
+                    context=context,
+                    on_input=list(on_input),
+                    on_output=list(on_output),
+                    on_input_non_blocking=list(on_input_non_blocking),
+                ),
             )
             yield aiter(stream)
 
@@ -169,6 +198,9 @@ class Session:
 
     def _on_render_prompt(self, response: dict[str, Any]) -> str:
         return messages.RenderPromptResponse.model_validate(response).prompt
+
+    def _on_get_configuration(self, response: dict[str, Any]) -> messages.Configuration:
+        return messages.GetConfigurationResponse.model_validate(response).config
 
     def _serialize(self, data: BaseModel | None) -> dict[str, Any] | None:
         if data is None:
