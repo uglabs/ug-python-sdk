@@ -21,7 +21,7 @@ poetry add ug-python-sdk
 ```python
 import asyncio
 import logging
-from pug_protocol.client import Client
+from ug_python_sdk.client import Client
 
 async def main():
     # Create client and authenticate
@@ -71,8 +71,8 @@ await client.login_with_google()
 Configure the AI behavior using prompts, voice profiles, and utilities:
 
 ```python
-from pug_protocol.messages import VoiceProfile, Reference
-from pug_protocol.utilities import Classify, Extract
+from ug_python_sdk.messages import VoiceProfile, Reference
+from ug_python_sdk.utilities import Classify, Extract
 
 await session.set_configuration(
     # System prompt (can be a string or Reference)
@@ -110,7 +110,7 @@ await session.set_configuration(
 Store configurations on the server and reference them by name:
 
 ```python
-from pug_protocol.messages import Reference
+from ug_python_sdk.messages import Reference
 
 # Reference a stored prompt
 await session.set_configuration(
@@ -159,7 +159,7 @@ with session.interact(text="Tell me a joke", audio_output=True) as stream:
 Send audio for speech-to-text:
 
 ```python
-from pug_protocol.configs import AudioConfig
+from ug_python_sdk.configs import AudioConfig
 
 # Add audio data
 await session.add_audio(

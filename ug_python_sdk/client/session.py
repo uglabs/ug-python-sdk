@@ -6,8 +6,8 @@ import logging
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, AsyncIterator, Iterable, Iterator, Mapping, Self
 
-from pug_protocol import messages, rpc, utilities
-from pug_protocol.configs import AudioConfig
+from ug_python_sdk import messages, rpc, utilities
+from ug_python_sdk.configs import AudioConfig
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
