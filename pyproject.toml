@@ -13,6 +13,9 @@ dynamic = ["dependencies"]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.poetry]
+packages = [{include = "pug_protocol"}]
+
 [tool.poetry.dependencies]
 websockets = "^15.0.1"
 pydantic = "^2.11.7"
