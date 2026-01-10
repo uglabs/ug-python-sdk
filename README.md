@@ -5,13 +5,13 @@ Python SDK for the UG AI Platform - enabling real-time conversational AI interac
 ## Installation
 
 ```bash
-pip install pug-protocol
+pip install ug-python-sdk
 ```
 
 Or with Poetry:
 
 ```bash
-poetry add pug-protocol
+poetry add ug-python-sdk
 ```
 
 **Requirements:** Python 3.12+
