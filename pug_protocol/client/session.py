@@ -78,23 +78,48 @@ class Session:
     def set_configuration(
         self,
         *,
-        prompt: str,
+        prompt: str | messages.Reference | None = None,
         temperature: float | None = None,
-        utilities: Mapping[str, utilities.AnyUtility | None] | None = None,
-        safety_policy: str | None = None,
+        utilities: Mapping[str, utilities.AnyUtility | messages.Reference | None] | None = None,
+        safety_policy: str | messages.Reference | None = None,
+        voice_profile: messages.VoiceProfile | messages.Reference | None = None,
+        debug: bool = False,
     ) -> rpc.ResponseFuture[None]:
         return self._make_request(
             messages.SetConfigurationRequest(
                 config=messages.Configuration(
-                    prompt=prompt, temperature=temperature, utilities=dict(utilities or {}), safety_policy=safety_policy
+                    prompt=prompt,
+                    temperature=temperature,
+                    utilities=dict(utilities or {}),
+                    safety_policy=safety_policy,
+                    voice_profile=voice_profile,
+                    debug=debug,
                 )
             ),
+        ).transform(self._no_response)
+
+    def set_configuration_ref(self, reference: messages.Reference) -> rpc.ResponseFuture[None]:
+        """Set configuration from a stored reference.
+
+        Instead of passing individual configuration fields, pass a Reference
+        to a stored Configuration object. The reference is resolved server-side.
+
+        Example:
+            await session.set_configuration_ref(Reference(reference="my_config@v1"))
+        """
+        return self._make_request(
+            messages.SetConfigurationRequest(config=reference),
         ).transform(self._no_response)
 
     def get_configuration(self) -> rpc.ResponseFuture[messages.Configuration]:
         return self._make_request(
             messages.GetConfigurationRequest(),
         ).transform(self._on_get_configuration)
+
+    def merge_configuration(self, references: list[messages.Reference]) -> rpc.ResponseFuture[list[str]]:
+        return self._make_request(
+            messages.MergeConfigurationRequest(references=references),
+        ).transform(self._on_merge_configuration)
 
     def render_prompt(self, *, context: dict[str, Any]) -> rpc.ResponseFuture[str]:
         return self._make_request(
@@ -201,6 +226,9 @@ class Session:
 
     def _on_get_configuration(self, response: dict[str, Any]) -> messages.Configuration:
         return messages.GetConfigurationResponse.model_validate(response).config
+
+    def _on_merge_configuration(self, response: dict[str, Any]) -> list[str]:
+        return messages.MergeConfigurationResponse.model_validate(response).utilities
 
     def _serialize(self, data: BaseModel | None) -> dict[str, Any] | None:
         if data is None:

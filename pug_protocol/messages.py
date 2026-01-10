@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import re
 from typing import Any, Literal, Mapping, Self
 
-from pydantic import AwareDatetime, BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field, model_validator
 
 from .configs import AudioConfig
 from .types import Base64
@@ -155,7 +156,7 @@ class DetectSpeakersResponse(Response):
 
 class SetConfigurationRequest(Request):
     kind: Literal["set_configuration"] = "set_configuration"
-    config: Configuration
+    config: Configuration | Reference
 
 
 class SetConfigurationResponse(Response):
@@ -283,11 +284,96 @@ class RunResponse(Response):
     kind: Literal["run"] = "run"
 
 
+class GenerateImageRequest(Request):
+    kind: Literal["generate_image"] = "generate_image"
+    prompt: str
+    provider: Literal["bria", "replicate"] = "bria"
+
+    # Common parameters
+    negative_prompt: str | None = None
+    aspect_ratio: str | None = None
+    seed: int | None = None
+    inference_steps: int | None = None
+
+    # Bria specific
+    generation_type: Literal["fast", "tailored"] = "fast"
+    model: str | None = None
+    image: Base64 | None = None  # for image prompt
+    strength: float | None = None
+    guidance_scale: float | None = None
+
+    # Replicate specific
+    lora_weights: str | None = None
+    lora_scale: float | None = None
+
+    @model_validator(mode="before")
+    def validate_model_for_provider(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data  # Let pydantic handle non-dict inputs
+
+        provider = data.get("provider")
+        generation_type = data.get("generation_type")
+        model = data.get("model")
+
+        if provider == "bria" and generation_type == "fast" and model is not None:
+            if not re.fullmatch(r"[a-zA-Z0-9_.-]+", model):
+                raise ValueError(f"Invalid Bria fast model version format: {model!r}")
+
+        return data
+
+
+class GenerateImageResponse(Response):
+    kind: Literal["generate_image"] = "generate_image"
+    image: Base64
+
+
+class GetAvailableModelsRequest(Request):
+    kind: Literal["get_available_models"] = "get_available_models"
+
+
+class GetAvailableModelsResponse(Response):
+    kind: Literal["get_available_models"] = "get_available_models"
+    models: dict[str, str]
+
+
+class VoiceProfile(BaseModel):
+
+    # Provider selection - determines which TTS service handles the request
+    # If not set, binding order decides (ElevenLabs first by default)
+    provider: Literal["elevenlabs", "deepdub"] | None = None
+
+    # Voice identifier - used by BOTH providers
+    # For ElevenLabs: the ElevenLabs voice ID
+    # For Deepdub: maps to the voice_prompt_id
+    voice_id: str | None = None
+
+    # ElevenLabs-specific parameters
+    speed: float | None = Field(default=None, ge=0.7, le=1.2)
+    stability: float | None = Field(default=None, ge=0.0, le=1.0)
+    similarity_boost: float | None = Field(default=None, ge=0.0, le=1.0)
+
+    # Deepdub-specific parameters
+    deepdub_model: Literal["dd-etts-1.1", "dd-etts-2.5"] | None = None
+    deepdub_tempo: float | None = Field(default=None, ge=0.0, le=2.0)
+    deepdub_variance: float | None = Field(default=None, ge=0.0, le=1.0)
+    deepdub_locale: str | None = None  # e.g., "en-US", "es-ES"
+
+    # Deepdub accent control (blend between base and target accents)
+    deepdub_accent_base_locale: str | None = None  # e.g., "en-US"
+    deepdub_accent_locale: str | None = None  # Target accent, e.g., "en-GB"
+    deepdub_accent_ratio: float | None = Field(default=None, ge=0.0, le=1.0)
+
+    # Deepdub audio post-processing
+    deepdub_clean_audio: bool | None = None
+
+
 class Configuration(BaseModel):
     prompt: str | Reference | None = None
     temperature: float | None = None
     utilities: dict[str, AnyUtility | Reference | None] = Field(default_factory=dict)
     safety_policy: str | Reference | None = None
+    voice_profile: VoiceProfile | Reference | None = None
+    debug: bool = False
 
 
 class Reference(BaseModel):

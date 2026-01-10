@@ -58,7 +58,9 @@ class WebsocketClientChannel(WebsocketBaseChannel):
         self,
     ) -> AsyncGenerator[None, None]:
         self._logger.info("%s: connecting to %s", self, self.url)
-        async with websockets.connect(self.url) as ws:
+        # Increase max_size to 10MB to handle large images/messages
+        # Default is 1MB (2**20), which is too small for Base64-encoded images
+        async with websockets.connect(self.url, max_size=10 * 1024 * 1024) as ws:
             self._logger.info("%s: connected to %s", self, self.url)
             try:
                 self.websocket = ws

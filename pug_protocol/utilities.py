@@ -18,6 +18,8 @@ class Classify(Utility):
 
 class Extract(Utility):
     type: Literal["extract"] = "extract"
+    extract_prompt: str
+    additional_context: str | None = None
 
 
 # Note that for deserialization purposes classes that have a utility field

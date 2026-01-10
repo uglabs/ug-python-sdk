@@ -26,7 +26,13 @@ class SubtitleUnit(BaseModel):
 
 class SpeechUnit(BaseModel):
     audio: Base64
+    duration_sec: float
     # Only guaranteed to be present on the first unit in a stream.
     audio_config: AudioConfig | None = None
     subtitles: list[SubtitleUnit] | None = None
     # TODO: Add visemes when supported.
+
+
+class TranscriptionUnit(BaseModel):
+    text: str
+    duration_sec: float

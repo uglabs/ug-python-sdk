@@ -79,6 +79,14 @@ class Client:
         result = await self._get("/api/teams")
         return result["teams"]
 
+    async def list_policies(self) -> list[dict[str, Any]]:
+        result = await self._get("/api/policies")
+        return result["policies"]
+
+    async def get_service_accounts(self) -> dict[str, Any]:
+        result = await self._get("/api/users/service_accounts")
+        return result
+
     async def get_me(self) -> dict[str, Any]:
         result = await self._get("/api/users/me")
         return result
