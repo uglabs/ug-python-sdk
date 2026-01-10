@@ -1,4 +1,4 @@
-# PUG Protocol
+# UG Python SDK
 
 Python SDK for the UG AI Platform - enabling real-time conversational AI interactions with speech-to-text, text-to-speech, and LLM capabilities.
 
@@ -6,6 +6,12 @@ Python SDK for the UG AI Platform - enabling real-time conversational AI interac
 
 ```bash
 pip install pug-protocol
+```
+
+Or with Poetry:
+
+```bash
+poetry add pug-protocol
 ```
 
 **Requirements:** Python 3.12+
@@ -19,7 +25,7 @@ from pug_protocol.client import Client
 
 async def main():
     # Create client and authenticate
-    client = Client("https://your-pug-server.com", logging.getLogger())
+    client = Client("https://pug.stg.uglabs.app", logging.getLogger())
     await client.login(api_key="your-api-key")
 
     # Start a session
@@ -165,23 +171,8 @@ await session.add_audio(
 text = await session.transcribe(language_code="en")
 print(f"Transcribed: {text}")
 
-# Check if user is still speaking
-is_speaking = await session.check_turn()
-
 # Clear audio buffer
 await session.clear_audio()
-```
-
-### Keyword and Speaker Detection
-
-```python
-# Keyword spotting
-await session.add_keywords(["help", "cancel", "operator"])
-detected = await session.detect_keywords()
-
-# Speaker identification
-await session.add_speaker("john", speaker_audio_sample)
-speakers = await session.detect_speakers()
 ```
 
 ### Player Management
@@ -198,22 +189,6 @@ player = await client.get_player(player_pk=1)
 
 # Delete a player
 await client.delete_player(player_pk=1)
-```
-
-### Admin Operations
-
-```python
-# Team management
-teams = await client.admin.list_teams()
-team = await client.admin.create_team(name="New Team")
-await client.admin.update_team(team_pk=1, name="Updated Name")
-await client.admin.delete_team(team_pk=1)
-
-# User management
-users = await client.admin.list_users()
-user = await client.admin.get_user(user_pk=1)
-await client.admin.add_user_to_team(user_pk=1, team_pk=2)
-await client.admin.remove_user_from_team(user_pk=1, team_pk=2)
 ```
 
 ## Voice Providers
@@ -315,12 +290,7 @@ with session.interact(
 | `interact(...)` | Start conversation stream |
 | `add_audio(audio, config?)` | Add audio for STT |
 | `transcribe(language_code)` | Transcribe audio buffer |
-| `check_turn()` | Check if user speaking |
 | `clear_audio()` | Clear audio buffer |
-| `add_keywords(keywords)` | Add keyword spotting |
-| `detect_keywords()` | Detect keywords in audio |
-| `add_speaker(name, audio)` | Register speaker voice |
-| `detect_speakers()` | Identify speakers |
 | `render_prompt(context)` | Render prompt template |
 | `ping()` | Ping server |
 
