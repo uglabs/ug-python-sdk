@@ -1,6 +1,6 @@
 [project]
 name = "ug-python-sdk"
-version = "0.1.0"
+version = "3.0.1"
 description = "Python SDK for the UG AI Platform"
 authors = [
     {name = "Dan Gittik", email = "dan.gittik@uglabs.io"}
