@@ -20,4 +20,4 @@ packages = [{include = "ug_python_sdk"}]
 websockets = "^15.0.1"
 pydantic = "^2.11.7"
 httpx = "^0.28.1"
-aiohttp = "^3.13.3"
+aiohttp = "^3.13.4"
