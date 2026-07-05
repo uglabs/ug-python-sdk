@@ -296,4 +296,4 @@ with session.interact(
 
 ## License
 
-Proprietary - UG Labs
+MIT
